@@ -23,6 +23,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Run linting
+        run: |
+          pip install flake8
+          flake8 .
+      - name: Type checking
+        run: mypy .
+
       - name: Run tests
         run: |
           pytest
