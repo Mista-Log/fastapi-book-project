@@ -1,61 +1,86 @@
-# name: Deploy FastAPI to AWS EC2
+# # name: Deploy FastAPI to AWS EC2
+
+# # on:
+# #   push:
+# #     branches:
+# #       - main
+
+# # jobs:
+# #   deploy:
+# #     runs-on: ubuntu-latest
+
+# #     steps:
+# #       - name: Checkout Repository
+# #         uses: actions/checkout@v3
+
+# #       - name: Set up SSH
+# #         run: |
+# #           mkdir -p ~/.ssh
+# #           echo "${{ secrets.EC2_SSH_KEY }}" > ~/ec2_key
+# #           chmod 600 ~/ec2_key
+# #           ssh-keyscan -H ${{ secrets.EC2_IP }} >> ~/.ssh/known_hosts
+
+# #       - name: Deploy to EC2
+# #         run: |
+# #           ssh -o StrictHostKeyChecking=no -i ~/ec2_key health@${{ secrets.EC2_IP }} "
+# #             cd /home/health/Testing-project &&
+# #             source myenv/bin/activate &&
+# #             git pull origin main &&
+# #             pip install -r requirements.txt &&
+# #             sudo systemctl restart fastapi
+# #           "
+
+
+
+# name: Deploy FastAPI to EC2
 
 # on:
 #   push:
 #     branches:
-#       - main
+#       - main  # Trigger deployment on push to the main branch
 
 # jobs:
 #   deploy:
 #     runs-on: ubuntu-latest
 
 #     steps:
-#       - name: Checkout Repository
+#       - name: Checkout code
 #         uses: actions/checkout@v3
 
 #       - name: Set up SSH
-#         run: |
-#           mkdir -p ~/.ssh
-#           echo "${{ secrets.EC2_SSH_KEY }}" > ~/ec2_key
-#           chmod 600 ~/ec2_key
-#           ssh-keyscan -H ${{ secrets.EC2_IP }} >> ~/.ssh/known_hosts
+#         uses: webfactory/ssh-agent@v0.7.0
+#         with:
+#           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
 #       - name: Deploy to EC2
 #         run: |
-#           ssh -o StrictHostKeyChecking=no -i ~/ec2_key health@${{ secrets.EC2_IP }} "
-#             cd /home/health/Testing-project &&
-#             source myenv/bin/activate &&
+#           ssh -o StrictHostKeyChecking=no health@${{ secrets.EC2_IP }} << 'EOF'
+#             cd /home/health/Testing-project/fastapi-book-project &&
 #             git pull origin main &&
-#             pip install -r requirements.txt &&
 #             sudo systemctl restart fastapi
-#           "
+#           EOF
 
 
-
-name: Deploy FastAPI to EC2
-
+name: CD
 on:
   push:
     branches:
-      - main  # Trigger deployment on push to the main branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.7.0
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy to EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no health@${{ secrets.EC2_IP }} << 'EOF'
-            cd /home/health/Testing-project/fastapi-book-project &&
-            git pull origin main &&
+          host: ${{ secrets.EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/health/Testing-project
+            git pull origin main
+            source myenv/bin/activate
+            pip install -r requirements.txt
             sudo systemctl restart fastapi
-          EOF
+            sudo systemctl restart nginx
