@@ -26,5 +26,5 @@ jobs:
             source myenv/bin/activate &&
             git pull origin main &&
             pip install -r requirements.txt &&
-            sudo systemctl restart your-app-service
+            sudo systemctl restart fastapi
           "
