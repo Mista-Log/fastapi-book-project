@@ -1,0 +1,30 @@
+name: Deploy FastAPI to AWS
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no health@${{ secrets.EC2_IP }} "
+            cd /home/health/Testing-project &&
+            source myenv/bin/activate &&
+            git pull origin main &&
+            pip install -r requirements.txt &&
+            sudo systemctl restart fastapi
+          "
