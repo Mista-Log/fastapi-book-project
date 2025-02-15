@@ -65,5 +65,8 @@ jobs:
           pip install -r requirements.txt
           sudo systemctl restart fastapi || echo 'Failed to restart fastapi'
           "
+      - name: Verify Application is Running
+        run: |
+          curl http://127.0.0.1:8000/stage2
 
 
