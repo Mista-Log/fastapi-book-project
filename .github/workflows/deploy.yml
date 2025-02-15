@@ -1,3 +1,27 @@
+# name: CD
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Deploy via SSH
+#         uses: appleboy/ssh-action@master
+#         with:
+#           host: ${{ secrets.EC2_IP }}
+#           username: health
+#           key: ${{ secrets.SSH_PRIVATE_KEY }}
+#           script: |
+#             cd /home/health/Testing-project
+#             git pull origin main
+#             source myenv/bin/activate
+#             pip install -r requirements.txt
+#             sudo systemctl restart fastapi
+#             sudo systemctl restart nginx
+
 name: CD
 on:
   push:
@@ -8,16 +32,36 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Deploy via SSH (Key Authentication)
         uses: appleboy/ssh-action@master
+        continue-on-error: true  # Allow fallback to password authentication if this fails
         with:
           host: ${{ secrets.EC2_IP }}
           username: health
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e  # Exit immediately if any command fails
             cd /home/health/Testing-project
             git pull origin main
             source myenv/bin/activate
             pip install -r requirements.txt
-            sudo systemctl restart fastapi
-            sudo systemctl restart nginx
+            sudo systemctl restart fastapi || echo "Failed to restart fastapi"
+            sudo systemctl restart nginx || echo "Failed to restart nginx"
+
+      - name: Install sshpass (For Password Authentication)
+        if: failure()  # Run this step only if SSH key authentication fails
+        run: sudo apt-get install -y sshpass
+
+      - name: Deploy via SSH (Password Authentication)
+        if: failure()  # Run this step only if SSH key authentication fails
+        run: |
+          DECODED_PASSWORD=$(echo '${{ secrets.ENCODED_SSH_PASSWORD }}' | base64 --decode)
+          sshpass -p "$DECODED_PASSWORD" ssh -o StrictHostKeyChecking=no health@${{ secrets.EC2_IP }} "
+          cd /home/health/Testing-project
+          git pull origin main
+          source myenv/bin/activate
+          pip install -r requirements.txt
+          sudo systemctl restart fastapi || echo 'Failed to restart fastapi'
+          sudo systemctl restart nginx || echo 'Failed to restart nginx'
+          "
+
