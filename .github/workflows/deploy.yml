@@ -42,7 +42,8 @@ jobs:
           script: |
             set -e  # Exit immediately if any command fails
             cd /home/health/Testing-project
-            git pull origin main
+            git reset --hard HEAD
+            git pull origin main --force
             source myenv/bin/activate
             pip install -r requirements.txt
             sudo systemctl restart fastapi || echo "Failed to restart fastapi"
@@ -63,8 +64,6 @@ jobs:
           source myenv/bin/activate
           pip install -r requirements.txt
           sudo systemctl restart fastapi || echo 'Failed to restart fastapi'
-          sudo systemctl restart nginx || echo 'Failed to restart nginx'
           "
 
 
-          
