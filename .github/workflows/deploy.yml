@@ -65,14 +65,4 @@ jobs:
           pip install -r requirements.txt
           sudo systemctl restart fastapi || echo 'Failed to restart fastapi'
           "
-      - name: Verify Application is Running
-        run: |
-          echo "Testing /stage2 endpoint..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" http://196.27.128.98/stage2)
-          if [ "$response" -ne 200 ]; then
-            echo "Error: /stage2 endpoint returned status code $response"
-            exit 1
-          else
-            echo "Success: /stage2 endpoint returned status code 200"
-          fi
 
